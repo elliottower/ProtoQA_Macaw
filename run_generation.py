@@ -319,7 +319,7 @@ def main():
         print(i,'th example')
         raw_text = questions[single_question_idx]
         i+=1
-        context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(device)
+        context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
             with torch.no_grad():
                 if args.do_sample:
