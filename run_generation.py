@@ -332,6 +332,8 @@ def main():
                               "num_beams": args.num_samples,
                               "repetition_penalty": args.repetition_penalty
                               })
+            if args.debug:
+                print(out)
             nostop_text = out["output_slots_list"][0]['answer']
             if qidx[single_question_idx] not in prediced_dev:
                 prediced_dev[qidx[single_question_idx]] = [nostop_text]
