@@ -250,6 +250,7 @@ def main():
     parser.add_argument("--xlm_lang", type=str, default="", help="Optional language when used with the XLM model.")
     parser.add_argument("--length", type=int, default=5)
     parser.add_argument("--num_samples", type=int, default=10)
+    parser.add_argument("--do_sample", type=bool, default=True)
     parser.add_argument("--temperature", type=float, default=0.69,
                         help="temperature of 0 implies greedy sampling")
     parser.add_argument("--repetition_penalty", type=float, default=1.0,
@@ -327,15 +328,22 @@ def main():
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(device)
         if args.model_type in ["macaw-large", "macaw-3b", "macaw-11b", "macaw-answer-11b"]:
             with torch.no_grad():
-                out = model.generate(
-                    input_ids=context_tokens,
-                    max_length=args.length,
-                    temperature=args.temperature,
-                    top_k=args.top_k,
-                    top_p=args.top_p,
-                    repetition_penalty=args.repetition_penalty,
-                    num_beams=args.num_samples
-                )
+                if args.do_sample:
+                    out = model.generate(
+                        input_ids=context_tokens,
+                        max_length=args.length,
+                        temperature=args.temperature,
+                        top_k=args.top_k,
+                        top_p=args.top_p,
+                        repetition_penalty=args.repetition_penalty,
+                        num_beams=args.num_samples
+                    )
+                else:
+                    out = model.generate(
+                        input_ids=context_tokens,
+                        max_length=args.length,
+                        repetition_penalty=args.repetition_penalty
+                    )
                 out = out.tolist()
         if args.model_type == "gpt2":
             out = sample_sequence(
