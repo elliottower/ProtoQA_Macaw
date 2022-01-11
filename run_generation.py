@@ -15,7 +15,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from transformers import GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig, T5Config
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 import json
@@ -39,13 +39,13 @@ logger = logging.getLogger(__name__)
 MAX_LENGTH = int(10000)  # Hardcoded max length to avoid infinite loop
 
 ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig, T5Config)), ())
+ALL_MODELS = sum((conf for conf in (GPT2Config.get_config_dict("gpt2"), T5Config.get_config_dict("t5-large"))), ())
 
 MODEL_CLASSES = {
     'gpt2': (GPT2LMHeadModel, GPT2Tokenizer),
-    'macaw-large': (T5ForConditionalGeneration, T5Tokenizer),
-    'macaw-3b': (T5ForConditionalGeneration, T5Tokenizer),
-    'macaw-11b': (T5ForConditionalGeneration, T5Tokenizer),
-    'macaw-answer-11b': (T5ForConditionalGeneration, T5Tokenizer),
+    't5-large': (T5ForConditionalGeneration, T5Tokenizer),
+    't5-3b': (T5ForConditionalGeneration, T5Tokenizer),
+    't5-11b': (T5ForConditionalGeneration, T5Tokenizer),
 }
 
 
@@ -244,7 +244,7 @@ def main():
     parser.add_argument("--model_type", default=None, type=str, required=True,
                         help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
     parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
-                        help="Path to pre-trained model or shortcut name selected in the list: " + ", ".join(ALL_MODELS))
+                        help="Path to pre-trained model or shortcut name selected in the list: " + ", ".join(str(ALL_MODELS)))
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--padding_text", type=str, default="")
     parser.add_argument("--xlm_lang", type=str, default="", help="Optional language when used with the XLM model.")
@@ -326,7 +326,7 @@ def main():
         raw_text = questions[single_question_idx]
         i+=1
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(device)
-        if args.model_type in ["macaw-large", "macaw-3b", "macaw-11b", "macaw-answer-11b"]:
+        if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
             with torch.no_grad():
                 if args.do_sample:
                     out = model.generate(
