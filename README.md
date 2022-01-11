@@ -18,7 +18,7 @@ Colab notebook demo: [![Open In Colab](https://colab.research.google.com/assets/
 - Generate answers using the fine-tuned Macaw model:
 ```bash
 python run_generation.py \
---model_type=macaw \
+--model_type='macaw-large' \
 --model_name_or_path='allenai/macaw-large' \
 --length=10 \
 --num_samples=300 \

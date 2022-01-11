@@ -14,8 +14,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from transformers import GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig, T5Config
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 import json
@@ -42,9 +42,10 @@ ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (
 
 MODEL_CLASSES = {
     'gpt2': (GPT2LMHeadModel, GPT2Tokenizer),
-    'allenai/macaw-large': (AutoModelForSeq2SeqLM, AutoTokenizer),
-    'allenai/macaw-3b': (AutoModelForSeq2SeqLM, AutoTokenizer),
-    'allenai/macaw-11b': (AutoModelForSeq2SeqLM, AutoTokenizer),
+    'macaw-large': (T5ForConditionalGeneration, T5Tokenizer),
+    'macaw-3b': (T5ForConditionalGeneration, T5Tokenizer),
+    'macaw-11b': (T5ForConditionalGeneration, T5Tokenizer),
+    'macaw-answer-11b': (T5ForConditionalGeneration, T5Tokenizer),
 }
 
 
@@ -101,7 +102,6 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
 
 def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=0, top_p=0.0, repetition_penalty=1.0,
                     is_xlnet=False, is_xlm_mlm=False, xlm_mask_token=None, xlm_lang=None, device='cpu'):
-    context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0).repeat(num_samples, 1)
     generated = context
     with torch.no_grad():
@@ -279,6 +279,31 @@ def main():
     model.to(args.device)
     model.eval()
 
+    device_map = None
+    if args.n_gpu > 1:
+        # Split layers across the multiple GPUs, put extras in later devices to leave a bit extra on first one
+        cuda_devices = [ gpu_id for gpu_id in range(args.n_gpu) ] #TODO: check if this works on cluster where id's might be not in order?
+        num_layers = model.config.num_layers
+        layers_per_gpu = num_layers // args.n_gpu
+        has_one_extra = args.n_gpu - (num_layers - layers_per_gpu * args.n_gpu)
+        device_map = {}
+        current = 0
+        for device in cuda_devices:
+            next = current + layers_per_gpu
+            if len(device_map) >= has_one_extra:
+                next += 1
+            device_map[device] = list(range(current, next))
+            current = next
+    if len(cuda_devices) > 0:
+        device = f"cuda:{cuda_devices[0]}"
+    else:
+        device = "cpu"
+
+    if device_map is not None:
+        model.parallelize(device_map)
+    else:
+        model.to(device)
+
     en_stopwords = set(stopwords.words('english'))
     if args.length < 0 and model.config.max_position_embeddings > 0:
         args.length = model.config.max_position_embeddings
@@ -299,23 +324,36 @@ def main():
         print(i,'th example')
         raw_text = questions[single_question_idx]
         i+=1
-        context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
-        out = sample_sequence(
-            model=model,
-            context=context_tokens,
-            num_samples=args.num_samples,
-            length=args.length,
-            temperature=args.temperature,
-            top_k=args.top_k,
-            top_p=args.top_p,
-            repetition_penalty=args.repetition_penalty,
-            is_xlnet=False,
-            is_xlm_mlm=False,
-            xlm_mask_token=None,
-            xlm_lang=None,
-            device=args.device,
-        )
-        out = out[:, len(context_tokens):].tolist()
+        context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(device)
+        if args.model_type in ["macaw-large", "macaw-3b", "macaw-11b", "macaw-answer-11b"]:
+            with torch.no_grad():
+                out = model.generate(
+                    input_ids=context_tokens,
+                    max_length=args.length,
+                    temperature=args.temperature,
+                    top_k=args.top_k,
+                    top_p=args.top_p,
+                    repetition_penalty=args.repetition_penalty,
+                    num_beams=args.num_samples
+                )
+                out = out.tolist()
+        if args.model_type == "gpt2":
+            out = sample_sequence(
+                model=model,
+                context=context_tokens,
+                num_samples=args.num_samples,
+                length=args.length,
+                temperature=args.temperature,
+                top_k=args.top_k,
+                top_p=args.top_p,
+                repetition_penalty=args.repetition_penalty,
+                is_xlnet=False,
+                is_xlm_mlm=False,
+                xlm_mask_token=None,
+                xlm_lang=None,
+                device=args.device,
+            )
+            out = out[:, len(context_tokens):].tolist()
         for o in out:
             text = tokenizer.decode(o, clean_up_tokenization_spaces=True)
             text = text[: text.find(args.stop_token)+1 if args.stop_token else None]
