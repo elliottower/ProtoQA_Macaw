@@ -331,7 +331,6 @@ def main():
                 if args.do_sample:
                     out = model.generate(
                         input_ids=context_tokens,
-                        max_length=args.length,
                         temperature=args.temperature,
                         top_k=args.top_k,
                         top_p=args.top_p,
@@ -341,7 +340,6 @@ def main():
                 else:
                     out = model.generate(
                         input_ids=context_tokens,
-                        max_length=args.length,
                         repetition_penalty=args.repetition_penalty
                     )
                 out = out.tolist()
