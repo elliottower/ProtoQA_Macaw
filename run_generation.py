@@ -337,7 +337,23 @@ def main():
                         input_ids=context_tokens,
                         repetition_penalty=args.repetition_penalty
                     )
-                out = out.tolist()
+                text = tokenizer.batch_decode(out, clean_up_tokenization_spaces=True)
+                text = text[: text.find(args.stop_token) + 1 if args.stop_token else None]
+                text = text.strip()
+                if text.endswith('.'):
+                    text = text[:-1]
+                nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
+                nostop_text = " ".join(nostop_text_list)
+                if qidx[single_question_idx] not in prediced_dev:
+                    prediced_dev[qidx[single_question_idx]] = [nostop_text]
+                else:
+                    prediced_dev[qidx[single_question_idx]].append
+                result.append((raw_text, nostop_text))
+
+                if args.debug:
+                    print("Input: ", raw_text)
+                    print("Output (raw): ", text)
+                    print("Output: ", nostop_text)
         if args.model_type == "gpt2":
             out = sample_sequence(
                 model=model,
@@ -355,22 +371,22 @@ def main():
                 device=args.device,
             )
             out = out[:, len(context_tokens):].tolist()
-        for o in out:
-            text = tokenizer.decode(o, clean_up_tokenization_spaces=True)
-            text = text[: text.find(args.stop_token)+1 if args.stop_token else None]
-            text = text.strip()
-            if text.endswith('.'):
-                text = text[:-1]
-            # print(text)
-            nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
-            nostop_text = " ".join(nostop_text_list)
-            if qidx[single_question_idx] not in prediced_dev:
-                prediced_dev[qidx[single_question_idx]] = [nostop_text]
-            else:
-                prediced_dev[qidx[single_question_idx]].append(nostop_text)
-            result.append((raw_text, nostop_text))
+            for o in out:
+                text = tokenizer.decode(o, clean_up_tokenization_spaces=True)
+                text = text[: text.find(args.stop_token)+1 if args.stop_token else None]
+                text = text.strip()
+                if text.endswith('.'):
+                    text = text[:-1]
+                nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
+                nostop_text = " ".join(nostop_text_list)
+                if qidx[single_question_idx] not in prediced_dev:
+                    prediced_dev[qidx[single_question_idx]] = [nostop_text]
+                else:
+                    prediced_dev[qidx[single_question_idx]].append(nostop_text)
+                result.append((raw_text, nostop_text))
             if args.debug:
                 print("Input: ", raw_text)
+                print("Output (raw): ", text)
                 print("Output: ", nostop_text)
 
 
