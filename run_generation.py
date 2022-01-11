@@ -299,12 +299,13 @@ def main():
         model.parallelize(device_map)
 
     en_stopwords = set(stopwords.words('english'))
-    if args.length < 0 and model.config.max_position_embeddings > 0:
-        args.length = model.config.max_position_embeddings
-    elif 0 < model.config.max_position_embeddings < args.length:
-        args.length = model.config.max_position_embeddings  # No generation bigger than model size
-    elif args.length < 0:
-        args.length = MAX_LENGTH  # avoid infinite loop
+    if args.model_type == "gpt2":
+        if args.length < 0 and model.config.max_position_embeddings > 0:
+            args.length = model.config.max_position_embeddings
+        elif 0 < model.config.max_position_embeddings < args.length:
+            args.length = model.config.max_position_embeddings  # No generation bigger than model size
+        elif args.length < 0:
+            args.length = MAX_LENGTH  # avoid infinite loop
 
     logger.info(args)
     input_filename = args.input_file
