@@ -324,7 +324,7 @@ def main():
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
-            out = run_macaw("Q: at the beach, name something that might protect you from sun.\nA\nE", model_dict,
+            out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict,
                              {"do_sample": args.do_sample,
                               "temperature": args.temperature,
                               "top_k": args.top_k,
@@ -332,18 +332,11 @@ def main():
                               "num_beams": args.num_samples,
                               "repetition_penalty": args.repetition_penalty
                               })
-
-            text = tokenizer.batch_decode(out, clean_up_tokenization_spaces=True)
-            text = text[: text.find(args.stop_token) + 1 if args.stop_token else None]
-            text = text.strip()
-            if text.endswith('.'):
-                text = text[:-1]
-            nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
-            nostop_text = " ".join(nostop_text_list)
+            nostop_text = out["output_slots_list"][0]['answer']
             if qidx[single_question_idx] not in prediced_dev:
                 prediced_dev[qidx[single_question_idx]] = [nostop_text]
             else:
-                prediced_dev[qidx[single_question_idx]].append
+                prediced_dev[qidx[single_question_idx]].append(nostop_text)
             result.append((raw_text, nostop_text))
 
             if args.debug:
