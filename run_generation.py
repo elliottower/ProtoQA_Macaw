@@ -269,6 +269,7 @@ def main():
                         help="input file containing sentences")
     parser.add_argument('--output', type=str, default="./",
                         help="input file containing sentences")
+    parser.add_argument('--debug', action='store_true', help="Log input/output to console during generation")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -316,7 +317,7 @@ def main():
     i=0
     num = len(questions)
     for single_question_idx in range(len(questions)):
-        print(i,'th example')
+        print("Example ", i)
         raw_text = questions[single_question_idx]
         i+=1
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
@@ -363,12 +364,14 @@ def main():
             # print(text)
             nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
             nostop_text = " ".join(nostop_text_list)
-            # print(nostop_text)
             if qidx[single_question_idx] not in prediced_dev:
                 prediced_dev[qidx[single_question_idx]] = [nostop_text]
             else:
                 prediced_dev[qidx[single_question_idx]].append(nostop_text)
             result.append((raw_text, nostop_text))
+            if args.debug:
+                print("Input: ", raw_text)
+                print("Output: ", nostop_text)
 
 
     ranked_predicted_dev = collections.defaultdict(list)
