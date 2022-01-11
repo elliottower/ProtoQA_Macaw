@@ -280,7 +280,6 @@ def main():
     model.to(args.device)
     model.eval()
 
-    device_map = None
     if args.n_gpu > 1:
         # Split layers across the multiple GPUs, put extras in later devices to leave a bit extra on first one
         cuda_devices = [ gpu_id for gpu_id in range(args.n_gpu) ] #TODO: check if this works on cluster where id's might be not in order?
@@ -295,15 +294,7 @@ def main():
                 next += 1
             device_map[device] = list(range(current, next))
             current = next
-    if len(cuda_devices) > 0:
-        device = f"cuda:{cuda_devices[0]}"
-    else:
-        device = "cpu"
-
-    if device_map is not None:
         model.parallelize(device_map)
-    else:
-        model.to(device)
 
     en_stopwords = set(stopwords.words('english'))
     if args.length < 0 and model.config.max_position_embeddings > 0:
