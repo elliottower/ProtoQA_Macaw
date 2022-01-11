@@ -38,8 +38,10 @@ logger = logging.getLogger(__name__)
 
 MAX_LENGTH = int(10000)  # Hardcoded max length to avoid infinite loop
 
-ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig, T5Config)), ())
-ALL_MODELS = sum((conf for conf in (GPT2Config.get_config_dict("gpt2"), T5Config.get_config_dict("t5-large"))), ())
+ALL_MODELS = sum((conf for conf in (GPT2Config.get_config_dict("gpt2"),
+                                    T5Config.get_config_dict("t5-large"),
+                                    T5Config.get_config_dict("t5-3b"),
+                                    T5Config.get_config_dict("t5-11b"))), ())
 
 MODEL_CLASSES = {
     'gpt2': (GPT2LMHeadModel, GPT2Tokenizer),
