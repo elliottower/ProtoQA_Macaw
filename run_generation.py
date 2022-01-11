@@ -323,6 +323,7 @@ def main():
         i+=1
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
+            model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
             out = run_macaw("Q: at the beach, name something that might protect you from sun.\nA\nE", model_dict,
                              {"do_sample": args.do_sample,
                               "temperature": args.temperature,
