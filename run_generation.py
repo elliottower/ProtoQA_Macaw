@@ -17,6 +17,7 @@ import numpy as np
 from transformers import GPT2Config, OpenAIGPTConfig, XLNetConfig, TransfoXLConfig, XLMConfig, CTRLConfig, T5Config
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from macaw.utils import run_macaw, load_model
 
 import json
 import collections
@@ -322,38 +323,32 @@ def main():
         i+=1
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
-            with torch.no_grad():
-                if args.do_sample:
-                    out = model.generate(
-                        input_ids=context_tokens,
-                        temperature=args.temperature,
-                        top_k=args.top_k,
-                        top_p=args.top_p,
-                        repetition_penalty=args.repetition_penalty,
-                        num_beams=args.num_samples
-                    )
-                else:
-                    out = model.generate(
-                        input_ids=context_tokens,
-                        repetition_penalty=args.repetition_penalty
-                    )
-                text = tokenizer.batch_decode(out, clean_up_tokenization_spaces=True)
-                text = text[: text.find(args.stop_token) + 1 if args.stop_token else None]
-                text = text.strip()
-                if text.endswith('.'):
-                    text = text[:-1]
-                nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
-                nostop_text = " ".join(nostop_text_list)
-                if qidx[single_question_idx] not in prediced_dev:
-                    prediced_dev[qidx[single_question_idx]] = [nostop_text]
-                else:
-                    prediced_dev[qidx[single_question_idx]].append
-                result.append((raw_text, nostop_text))
+            out = run_macaw("Q: at the beach, name something that might protect you from sun.\nA\nE", model_dict,
+                             {"do_sample": args.do_sample,
+                              "temperature": args.temperature,
+                              "top_k": args.top_k,
+                              "top_p": args.top_p,
+                              "num_beams": args.num_samples,
+                              "repetition_penalty": args.repetition_penalty
+                              })
 
-                if args.debug:
-                    print("Input: ", raw_text)
-                    print("Output (raw): ", text)
-                    print("Output: ", nostop_text)
+            text = tokenizer.batch_decode(out, clean_up_tokenization_spaces=True)
+            text = text[: text.find(args.stop_token) + 1 if args.stop_token else None]
+            text = text.strip()
+            if text.endswith('.'):
+                text = text[:-1]
+            nostop_text_list = [tok for tok in text.split(' ') if tok not in en_stopwords]
+            nostop_text = " ".join(nostop_text_list)
+            if qidx[single_question_idx] not in prediced_dev:
+                prediced_dev[qidx[single_question_idx]] = [nostop_text]
+            else:
+                prediced_dev[qidx[single_question_idx]].append
+            result.append((raw_text, nostop_text))
+
+            if args.debug:
+                print("Input: ", raw_text)
+                print("Output (raw): ", text)
+                print("Output: ", nostop_text)
         if args.model_type == "gpt2":
             out = sample_sequence(
                 model=model,
