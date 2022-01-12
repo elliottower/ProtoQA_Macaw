@@ -324,15 +324,15 @@ def main():
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
-            out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
-            # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict,
-            #                 {"do_sample": args.do_sample,
-            #                  "temperature": args.temperature,
-            #                  "top_k": args.top_k,
-            #                  "top_p": args.top_p,
-            #                  "num_beams": args.num_samples,
-            #                  "repetition_penalty": args.repetition_penalty
-            #                  })
+            # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
+            out = run_macaw("Q: " + raw_text + "\nA", model_dict,
+                            {"do_sample": args.do_sample,
+                             "temperature": args.temperature,
+                             "top_k": args.top_k,
+                             "top_p": args.top_p,
+                             "num_beams": args.num_samples,
+                             "repetition_penalty": args.repetition_penalty
+                             })
             if args.debug:
                 print(out)
             nostop_text = out["output_slots_list"][0]['answer']
