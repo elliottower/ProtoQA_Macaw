@@ -344,7 +344,6 @@ def main():
 
             if args.debug:
                 print("Input: ", raw_text)
-                print("Output (raw): ", text)
                 print("Output: ", nostop_text)
         if args.model_type == "gpt2":
             out = sample_sequence(
@@ -378,7 +377,6 @@ def main():
                 result.append((raw_text, nostop_text))
             if args.debug:
                 print("Input: ", raw_text)
-                print("Output (raw): ", text)
                 print("Output: ", nostop_text)
 
 
