@@ -346,7 +346,7 @@ def main():
                 print("Input: ", raw_text)
                 print("Output: ", nostop_text)
         if args.model_type == "gpt2":
-            context_tokens = tokenizer.encode(raw_text, add_special_tokens=False).to(args.device)
+            context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
             out = sample_sequence(
                 model=model,
                 context=context_tokens,
