@@ -321,8 +321,8 @@ def main():
         print("Example ", i)
         raw_text = questions[single_question_idx]
         i+=1
-        context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
+            context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
             # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
             out = run_macaw("Q: " + raw_text + "\nA", model_dict,
@@ -346,6 +346,7 @@ def main():
                 print("Input: ", raw_text)
                 print("Output: ", nostop_text)
         if args.model_type == "gpt2":
+            context_tokens = tokenizer.encode(raw_text, add_special_tokens=False).to(args.device)
             out = sample_sequence(
                 model=model,
                 context=context_tokens,
