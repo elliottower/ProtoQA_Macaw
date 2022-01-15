@@ -323,29 +323,27 @@ def main():
         raw_text = questions[single_question_idx]
         i+=1
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
-            context_tokens = tokenizer.encode(raw_text, add_special_tokens=False, return_tensors='pt').to(args.device)
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
-            # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
-            out = run_macaw("Q: " + raw_text + "\nA", model_dict,
-                            {"do_sample": args.do_sample,
-                             "temperature": args.temperature,
-                             "top_k": args.top_k,
-                             "top_p": args.top_p,
-                             "num_beams": args.num_samples,
-                             "repetition_penalty": args.repetition_penalty
-                             })
-            if args.debug:
-                print(out)
-            nostop_text = out["output_slots_list"][0]['answer']
-            if qidx[single_question_idx] not in prediced_dev:
-                prediced_dev[qidx[single_question_idx]] = [nostop_text]
-            else:
-                prediced_dev[qidx[single_question_idx]].append(nostop_text)
-            result.append((raw_text, nostop_text))
+            for _ in range(args.num_samples):
+                with torch.no_grad():
+                    # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
+                    out = run_macaw("Q: " + raw_text + "\nA",
+                                    model_dict,
+                                    {"do_sample": args.do_sample,
+                                     "temperature": args.temperature,
+                                     "top_k": args.top_k,
+                                     "top_p": args.top_p,
+                                     "repetition_penalty": args.repetition_penalty
+                                     })
+                    nostop_text = out["output_slots_list"][0]['answer']
+                    if qidx[single_question_idx] not in prediced_dev:
+                        prediced_dev[qidx[single_question_idx]] = [nostop_text]
+                    else:
+                        prediced_dev[qidx[single_question_idx]].append(nostop_text)
+                    result.append((raw_text, nostop_text))
 
-            if args.debug:
-                print("Input: ", raw_text)
-                print("Output: ", nostop_text)
+                    if args.debug:
+                        print("Input: " + raw_text + " | Output: " + nostop_text)
         if args.model_type == "gpt2":
             context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
             out = sample_sequence(
@@ -377,9 +375,9 @@ def main():
                 else:
                     prediced_dev[qidx[single_question_idx]].append(nostop_text)
                 result.append((raw_text, nostop_text))
-            if args.debug:
-                print("Input: ", raw_text)
-                print("Output: ", nostop_text)
+                if args.debug:
+                    print("Input: ", raw_text)
+                    print("Output: ", nostop_text)
 
 
     ranked_predicted_dev = collections.defaultdict(list)
