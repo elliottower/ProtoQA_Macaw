@@ -1,9 +1,7 @@
-conda create -n protoqa python=3.6
-source activate protoqa
 git clone git@github.com:iesl/protoqa-evaluator.git
 pip install -e protoqa-evaluator
-conda install pytorch=1.4.0 torchvision torchaudio cudatoolkit=10.2 -c pytorch
-git clone git@github.com:huggingface/transformers.git
-cd transformers
-git checkout tags/v2.1.1
-pip install -e .
+git clone https://github.com/iesl/protoqa-data.git --q
+mv protoqa-data/data/* ./data/
+rm -rf protoqa-data
+pip install -r requirements.txt
+pip install --user -U nltk
