@@ -338,7 +338,7 @@ def main():
                                  "repetition_penalty": args.repetition_penalty,
                                  "num_return_sequences": args.num_samples
                                  })
-                for i in range(args.num_samples):
+                for j in range(args.num_samples):
                     nostop_text = out["output_slots_list"][i]['answer']
                     if qidx[single_question_idx] not in prediced_dev:
                         prediced_dev[qidx[single_question_idx]] = [nostop_text]
