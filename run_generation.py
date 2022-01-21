@@ -183,10 +183,8 @@ def get_question(data_dict, transform_input=False):
     questions = []
     for q in data_dict:
         question = data_dict[q]
-        print("Question: ", question)
         if transform_input:
             question = transform_question(question)
-            print("Transformed: ", question)
         questions.append(question)
         qidx.append(q)
     return qidx, questions
