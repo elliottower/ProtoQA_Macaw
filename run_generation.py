@@ -332,6 +332,7 @@ def main():
                     out = run_macaw("Q: " + raw_text + "\nA",
                                     model_dict,
                                     {"do_sample": args.do_sample,
+                                     "max_length": args.length,
                                      "temperature": args.temperature,
                                      "top_k": args.top_k,
                                      "top_p": args.top_p,
