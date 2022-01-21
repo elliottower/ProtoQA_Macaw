@@ -161,7 +161,7 @@ def make_question(question):
     elif question.startswith('tell me '):
         question = question.replace('tell me ', 'what is ')
         question += '?'
-    return "Q: " + question + "\nA: "
+    return question
 
 def transform_question(question):
     question = question.lower()
@@ -366,7 +366,7 @@ def main():
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
             with torch.no_grad():
                 # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
-                out = run_macaw(raw_text,
+                out = run_macaw("Q: " + raw_text + "\nA",
                                 model_dict,
                                 {"do_sample": args.do_sample,
                                  "max_length": args.length,
@@ -385,7 +385,8 @@ def main():
                     result.append((raw_text, nostop_text))
 
                     if args.debug:
-                        print(raw_text + nostop_text)
+                        print("Input: ", raw_text)
+                        print("Output: ", nostop_text)
         if args.model_type == "gpt2":
             context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
             out = sample_sequence(
