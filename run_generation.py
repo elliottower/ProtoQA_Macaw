@@ -326,19 +326,20 @@ def main():
         i+=1
         if args.model_type in ["t5-large", "t5-3b", "t5-11b"]:
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
-            for _ in range(args.num_samples):
-                with torch.no_grad():
-                    # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
-                    out = run_macaw("Q: " + raw_text + "\nA",
-                                    model_dict,
-                                    {"do_sample": args.do_sample,
-                                     "max_length": args.length,
-                                     "temperature": args.temperature,
-                                     "top_k": args.top_k,
-                                     "top_p": args.top_p,
-                                     "repetition_penalty": args.repetition_penalty
-                                     })
-                    nostop_text = out["output_slots_list"][0]['answer']
+            with torch.no_grad():
+                # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
+                out = run_macaw("Q: " + raw_text + "\nA",
+                                model_dict,
+                                {"do_sample": args.do_sample,
+                                 "max_length": args.length,
+                                 "temperature": args.temperature,
+                                 "top_k": args.top_k,
+                                 "top_p": args.top_p,
+                                 "repetition_penalty": args.repetition_penalty,
+                                 "num_return_sequences": args.num_samples
+                                 })
+                for i in range(args.num_samples):
+                    nostop_text = out["output_slots_list"][i]['answer']
                     if qidx[single_question_idx] not in prediced_dev:
                         prediced_dev[qidx[single_question_idx]] = [nostop_text]
                     else:
