@@ -136,32 +136,32 @@ def make_question(question):
         pass
     elif 'name something' in question:
         question = question.replace('name something', 'what is something')
-        question += ' is'
+        question += '?'
     elif 'tell me something' in question:
         question = question.replace('tell me something', 'what is something')
-        question += ' is'
+        question += '?'
     elif 'name a ' in question:
         question = question.replace('name a ', 'what is a ')
-        question += ' is'
+        question += '?'
     elif 'name an ' in question:
         question = question.replace('name an ', 'what is an ')
-        question += ' is'
+        question += '?'
     elif 'name' in question:
-        question = question.replace('name', '')
-        question += ' is'
+        question = question.replace('name', 'what is')
+        question += '?'
     elif question.startswith('tell me a '):
         question = question.replace('tell me a ', 'what is a ')
-        question += ' is'
+        question += '?'
     elif question.startswith('tell me an '):
         question = question.replace('tell me an ', 'what is an ')
-        question += ' is'
+        question += '?'
     elif question.startswith('give me a '):
         question = question.replace('give me a ', 'what is a ')
-        question += ' is'
+        question += '?'
     elif question.startswith('tell me '):
         question = question.replace('tell me ', 'what is ')
-        question += ' is'
-    return "Q: " + question + "\nA"
+        question += '?'
+    return "Q: " + question + "\nA: "
 
 def transform_question(question):
     question = question.lower()
@@ -213,12 +213,12 @@ def transform_question(question):
         question = 'Q: '+question +'? A: '
     return question
 
-def get_question(data_dict, transform_input=False, make_question=False):
+def get_question(data_dict, transform_input=False, transform_q=False):
     qidx = []
     questions = []
     for q in data_dict:
         question = data_dict[q]
-        if make_question:
+        if transform_q:
             question = make_question(question)
         elif transform_input:
             question = transform_question(question)
@@ -311,7 +311,7 @@ def main():
                         help="input file containing sentences")
     parser.add_argument('--debug', action='store_true', help="Log input/output to console during generation")
     parser.add_argument('--transform_input', action="store_true", help="Transform the question to a sentence which can be continued (easier for GPT-2)")
-    parser.add_argument('--make_question', action='store_true', help="Transform the input to be phrased as a question with a question mark")
+    parser.add_argument('--transform_q', action='store_true', help="Transform the input to be phrased as a question with a question mark")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -353,7 +353,7 @@ def main():
     logger.info(args)
     input_filename = args.input_file
     true_dev = load_data_from_jsonl(input_filename)
-    qidx, questions = get_question(true_dev, args.transform_input)
+    qidx, questions = get_question(true_dev, args.transform_input, args.transform_q)
     prediced_dev = collections.defaultdict(list)
     result = []
     i=0
@@ -366,7 +366,7 @@ def main():
             model_dict = {"model": model, "tokenizer": tokenizer, "cuda_device": args.device}
             with torch.no_grad():
                 # out = run_macaw({"Q: ": raw_text, "A:": ""}, model_dict)
-                out = run_macaw("Q: " + raw_text + "\nA",
+                out = run_macaw(raw_text,
                                 model_dict,
                                 {"do_sample": args.do_sample,
                                  "max_length": args.length,
@@ -377,7 +377,7 @@ def main():
                                  "num_return_sequences": args.num_samples
                                  })
                 for j in range(args.num_samples):
-                    nostop_text = out["output_slots_list"][i]['answer']
+                    nostop_text = out["output_slots_list"][j]['answer']
                     if qidx[single_question_idx] not in prediced_dev:
                         prediced_dev[qidx[single_question_idx]] = [nostop_text]
                     else:
@@ -385,7 +385,7 @@ def main():
                     result.append((raw_text, nostop_text))
 
                     if args.debug:
-                        print("Input: " + raw_text + " | Output: " + nostop_text)
+                        print(raw_text + nostop_text)
         if args.model_type == "gpt2":
             context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
             out = sample_sequence(
