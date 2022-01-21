@@ -128,6 +128,41 @@ def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=
             generated = torch.cat((generated, next_token), dim=1)
     return generated
 
+def make_question(question):
+    question = question.lower()
+    question = question.replace('.', '')
+    question = question.replace(':', '')
+    if "?" in question:
+        pass
+    elif 'name something' in question:
+        question = question.replace('name something', 'what is something')
+        question += ' is'
+    elif 'tell me something' in question:
+        question = question.replace('tell me something', 'what is something')
+        question += ' is'
+    elif 'name a ' in question:
+        question = question.replace('name a ', 'what is a ')
+        question += ' is'
+    elif 'name an ' in question:
+        question = question.replace('name an ', 'what is an ')
+        question += ' is'
+    elif 'name' in question:
+        question = question.replace('name', '')
+        question += ' is'
+    elif question.startswith('tell me a '):
+        question = question.replace('tell me a ', 'what is a ')
+        question += ' is'
+    elif question.startswith('tell me an '):
+        question = question.replace('tell me an ', 'what is an ')
+        question += ' is'
+    elif question.startswith('give me a '):
+        question = question.replace('give me a ', 'what is a ')
+        question += ' is'
+    elif question.startswith('tell me '):
+        question = question.replace('tell me ', 'what is ')
+        question += ' is'
+    return "Q: " + question + "\nA"
+
 def transform_question(question):
     question = question.lower()
     question = question.replace('.', '')
@@ -178,12 +213,14 @@ def transform_question(question):
         question = 'Q: '+question +'? A: '
     return question
 
-def get_question(data_dict, transform_input=False):
+def get_question(data_dict, transform_input=False, make_question=False):
     qidx = []
     questions = []
     for q in data_dict:
         question = data_dict[q]
-        if transform_input:
+        if make_question:
+            question = make_question(question)
+        elif transform_input:
             question = transform_question(question)
         questions.append(question)
         qidx.append(q)
@@ -274,6 +311,7 @@ def main():
                         help="input file containing sentences")
     parser.add_argument('--debug', action='store_true', help="Log input/output to console during generation")
     parser.add_argument('--transform_input', action="store_true", help="Transform the question to a sentence which can be continued (easier for GPT-2)")
+    parser.add_argument('--make_question', action='store_true', help="Transform the input to be phrased as a question with a question mark")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
