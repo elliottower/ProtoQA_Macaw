@@ -178,13 +178,16 @@ def transform_question(question):
         question = 'Q: '+question +'? A: '
     return question
 
-def get_question(data_dict):
+def get_question(data_dict, transform_input=False):
     qidx = []
     questions = []
     for q in data_dict:
         question = data_dict[q]
-        transformed_question = transform_question(question)
-        questions.append(transformed_question)
+        print("Question: ", question)
+        if transform_input:
+            question = transform_question(question)
+            print("Transformed: ", question)
+        questions.append(question)
         qidx.append(q)
     return qidx, questions
 
@@ -272,6 +275,7 @@ def main():
     parser.add_argument('--output', type=str, default="./",
                         help="input file containing sentences")
     parser.add_argument('--debug', action='store_true', help="Log input/output to console during generation")
+    parser.add_argument('--transform_input', action="store_true", help="Transform the question to a sentence which can be continued (easier for GPT-2)")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -313,7 +317,7 @@ def main():
     logger.info(args)
     input_filename = args.input_file
     true_dev = load_data_from_jsonl(input_filename)
-    qidx, questions = get_question(true_dev)
+    qidx, questions = get_question(true_dev, args.transform_input)
     prediced_dev = collections.defaultdict(list)
     result = []
     i=0
